@@ -1,17 +1,9 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
+const { Schema, model } = require('mongoose');
 
-let mongod;
-
-async function connect() {
-  mongod = await MongoMemoryServer.create();
-  await mongoose.connect(mongod.getUri());
-  console.log('📦 Banco em memória iniciado');
-}
-
-async function disconnect() {
-  await mongoose.disconnect();
-  if (mongod) await mongod.stop();
-}
-
-module.exports = { connect, disconnect };
+module.exports = model('Cart', new Schema({
+  user: { type: Schema.Types.ObjectId, ref: 'User', unique: true },
+  items: [{
+    product: { type: Schema.Types.ObjectId, ref: 'Product' },
+    quantity: { type: Number, min: 1 },
+  }],
+}));
