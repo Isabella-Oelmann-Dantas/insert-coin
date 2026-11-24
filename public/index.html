@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insert Coin | Games Retrô</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0b1a; --panel: #14142b; --pink: #ff2e97; --cyan: #00f0ff;
+    --yellow: #ffe14d; --text: #e8e8ff; --muted: #8a8ab0; --danger: #ff5c5c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'VT323', monospace; font-size: 22px;
+    background-image: linear-gradient(rgba(0,240,255,.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,240,255,.04) 1px, transparent 1px);
+    background-size: 32px 32px; min-height: 100vh;
+  }
+  h1, h2, h3, button, .px { font-family: 'Press Start 2P', monospace; }
+  header {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 16px 24px; border-bottom: 3px solid var(--pink); background: var(--panel);
+  }
+  .logo { color: var(--pink); font-size: 18px; text-shadow: 0 0 10px var(--pink); }
+  .logo small { display: block; color: var(--cyan); font-size: 8px; margin-top: 8px; text-shadow: none; }
+  nav { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .badge { font-family: 'Press Start 2P'; font-size: 9px; padding: 6px 8px; border: 2px solid var(--cyan); color: var(--cyan); }
+  .badge.gold { border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
+  button {
+    background: transparent; color: var(--cyan); border: 3px solid var(--cyan);
+    padding: 10px 14px; font-size: 10px; cursor: pointer; transition: .15s;
+  }
+  button:hover:not(:disabled) { background: var(--cyan); color: var(--bg); box-shadow: 0 0 14px var(--cyan); }
+  button.pink { color: var(--pink); border-color: var(--pink); }
+  button.pink:hover:not(:disabled) { background: var(--pink); color: var(--bg); box-shadow: 0 0 14px var(--pink); }
+  button:disabled { opacity: .4; cursor: not-allowed; border-color: var(--muted); color: var(--muted); }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px; }
+  .hidden { display: none !important; }
+  .card {
+    background: var(--panel); border: 3px solid var(--cyan); padding: 20px;
+    box-shadow: 6px 6px 0 var(--pink);
+  }
+  .auth { max-width: 460px; margin: 40px auto; }
+  .auth h2 { color: var(--yellow); font-size: 14px; margin-top: 0; }
+  label { display: block; margin: 12px 0 4px; color: var(--cyan); }
+  input, select {
+    width: 100%; background: var(--bg); color: var(--text); border: 2px solid var(--muted);
+    padding: 8px 10px; font-family: 'VT323'; font-size: 22px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--pink); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .link { background: none; border: none; color: var(--muted); text-decoration: underline; padding: 0; font-family: 'VT323'; font-size: 20px; }
+  .link:hover:not(:disabled) { background: none; color: var(--pink); box-shadow: none; }
+  .demo { margin-top: 20px; border-top: 2px dashed var(--muted); padding-top: 12px; color: var(--muted); }
+  .demo button { font-size: 8px; padding: 8px; margin: 4px 4px 0 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 20px; }
+  .product { text-align: center; }
+  .product .emoji { font-size: 64px; }
+  .product h3 { font-size: 11px; line-height: 1.6; color: var(--cyan); }
+  .product p { color: var(--muted); margin: 6px 0; min-height: 52px; }
+  .tag { font-family: 'Press Start 2P'; font-size: 8px; color: var(--yellow); }
+  .price { font-family: 'Press Start 2P'; color: var(--pink); font-size: 14px; margin: 10px 0; }
+  .stock { color: var(--muted); }
+  .stock.out { color: var(--danger); }
+  .section-title { color: var(--yellow); font-size: 14px; }
+  /* painel lateral do carrinho */
+  aside {
+    position: fixed; top: 0; right: 0; height: 100%; width: min(400px, 100%);
+    background: var(--panel); border-left: 3px solid var(--pink); padding: 20px;
+    transform: translateX(100%); transition: transform .25s; z-index: 20; overflow-y: auto;
+  }
+  aside.open { transform: translateX(0); }
+  aside h2 { color: var(--pink); font-size: 14px; }
+  .item { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--muted); padding: 8px 0; gap: 8px; }
+  .item small { color: var(--muted); display: block; }
+  .item button { font-size: 8px; padding: 6px; }
+  .sum { margin-top: 14px; }
+  .sum div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .sum .total { font-family: 'Press Start 2P'; color: var(--yellow); font-size: 12px; border-top: 3px solid var(--cyan); padding-top: 10px; margin-top: 6px; }
+  .free { color: var(--cyan); }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 3px solid var(--cyan); padding: 12px 18px;
+    font-family: 'Press Start 2P'; font-size: 10px; line-height: 1.6; z-index: 50; max-width: 90%; text-align: center;
+  }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .toast.levelup { border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 25px var(--yellow); }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 10; }
+  .orders .o { border-bottom: 2px dashed var(--muted); padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo px">🕹️ INSERT COIN<small>Continue? 10... 9... 8...</small></div>
+  <nav id="nav" class="hidden">
+    <span id="who" class="badge"></span>
+    <button id="btnShop">LOJA</button>
+    <button id="btnOrders">PEDIDOS</button>
+    <button id="btnCart" class="pink">🛒 CARRINHO (<span id="cartCount">0</span>)</button>
+    <button id="btnLogout">SAIR</button>
+  </nav>
+</header>
+
+<main>
+  <!-- LOGIN / CADASTRO -->
+  <section id="viewAuth" class="card auth">
+    <h2 id="authTitle">PLAYER 1, ENTRE</h2>
+    <div id="nameBox" class="hidden">
+      <label for="name">Nome</label>
+      <input id="name" autocomplete="name">
+    </div>
+    <label for="email">E-mail</label>
+    <input id="email" type="email" autocomplete="email">
+    <label for="password">Senha</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <div class="row">
+      <button id="btnAuth" class="pink">ENTRAR</button>
+      <button id="btnToggle" class="link">Criar conta</button>
+    </div>
+    <div class="demo">
+      Usuários de teste (senha 123456):<br>
+      <button data-demo="ana@insertcoin.com">ANA · comum</button>
+      <button data-demo="bruno@insertcoin.com">BRUNO · quase Gold</button>
+      <button data-demo="carla@insertcoin.com">CARLA · Gold</button>
+    </div>
+  </section>
+
+  <!-- LOJA -->
+  <section id="viewShop" class="hidden">
+    <h2 class="section-title">▶ ESCOLHA SEU JOGO</h2>
+    <div id="products" class="grid"></div>
+  </section>
+
+  <!-- PEDIDOS -->
+  <section id="viewOrders" class="hidden">
+    <h2 class="section-title">▶ SEUS PEDIDOS</h2>
+    <div id="orders" class="card orders"></div>
+  </section>
+</main>
+
+<!-- CARRINHO -->
+<div id="overlay" class="overlay hidden"></div>
+<aside id="cartPanel">
+  <h2>🛒 CARRINHO</h2>
+  <div id="cartItems"></div>
+  <label for="payment">Forma de pagamento</label>
+  <select id="payment">
+    <option value="pix">Pix</option>
+    <option value="cartao">Cartão</option>
+    <option value="dinheiro">Dinheiro (10% OFF)</option>
+  </select>
+  <div class="sum" id="cartSum"></div>
+  <div class="row">
+    <button id="btnCheckout" class="pink">FINALIZAR</button>
+    <button id="btnClose">FECHAR</button>
+  </div>
+</aside>
+
+<script>
+const API = '/api';
+const SHIPPING_FEE = 19.9, CASH_DISCOUNT = 0.1;
+const $ = (id) => document.getElementById(id);
+const brl = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+let token = localStorage.getItem('token');
+let me = null;
+let cart = { items: [], subtotal: 0 };
+let registering = false;
+
+// ---------- API ----------
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 401 && token) logout(true);
+    throw new Error(data.error || 'Erro inesperado');
+  }
+  return data;
+}
+
+// ---------- UI helpers ----------
+function toast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), type === 'levelup' ? 5000 : 3000);
+}
+function show(view) {
+  ['viewAuth', 'viewShop', 'viewOrders'].forEach((v) => $(v).classList.toggle('hidden', v !== view));
+}
+function openCart(open) {
+  $('cartPanel').classList.toggle('open', open);
+  $('overlay').classList.toggle('hidden', !open);
+}
+
+// ---------- Auth ----------
+function setMode(isRegister) {
+  registering = isRegister;
+  $('authTitle').textContent = isRegister ? 'NOVO PLAYER' : 'PLAYER 1, ENTRE';
+  $('nameBox').classList.toggle('hidden', !isRegister);
+  $('btnAuth').textContent = isRegister ? 'CADASTRAR' : 'ENTRAR';
+  $('btnToggle').textContent = isRegister ? 'Já tenho conta' : 'Criar conta';
+}
+
+async function submitAuth() {
+  try {
+    const body = { email: $('email').value, password: $('password').value };
+    if (registering) body.name = $('name').value;
+    const data = await api(registering ? '/auth/register' : '/auth/login', { method: 'POST', body });
+    token = data.token;
+    localStorage.setItem('token', token);
+    me = data.user;
+    await enterApp();
+    toast(registering ? 'CONTA CRIADA! BEM-VINDO' : 'PLAYER 1 PRONTO!');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function logout(expired = false) {
+  token = null; me = null;
+  localStorage.removeItem('token');
+  $('nav').classList.add('hidden');
+  openCart(false);
+  show('viewAuth');
+  if (expired === true) toast('SESSÃO EXPIRADA', 'error');
+}
+
+async function enterApp() {
+  $('nav').classList.remove('hidden');
+  renderWho();
+  await Promise.all([loadProducts(), loadCart()]);
+  show('viewShop');
+}
+
+function renderWho() {
+  const el = $('who');
+  el.textContent = me.isVip ? `🏆 ${me.name} · GOLD` : me.name;
+  el.classList.toggle('gold', me.isVip);
+}
+
+// ---------- Produtos ----------
+async function loadProducts() {
+  const products = await api('/products');
+  $('products').innerHTML = products.map((p) => `
+    <article class="card product">
+      <div class="emoji">${p.emoji || '🎮'}</div>
+      <h3>${p.name}</h3>
+      <div class="tag">${p.platform || ''}</div>
+      <p>${p.description || ''}</p>
+      <div class="price">${brl(p.price)}</div>
+      <div class="stock ${p.stock < 1 ? 'out' : ''}">${p.stock < 1 ? 'ESGOTADO' : p.stock + ' em estoque'}</div>
+      <div class="row" style="justify-content:center">
+        <button class="pink" data-add="${p._id}" ${p.stock < 1 ? 'disabled' : ''}>
+          ${p.stock < 1 ? 'GAME OVER' : '+ CARRINHO'}
+        </button>
+      </div>
+    </article>`).join('');
+}
+
+// ---------- Carrinho ----------
+async function loadCart() {
+  cart = await api('/cart');
+  renderCart();
+}
+
+function renderCart() {
+  $('cartCount').textContent = cart.items.reduce((s, i) => s + i.quantity, 0);
+  $('cartItems').innerHTML = cart.items.length
+    ? cart.items.map((i) => `
+        <div class="item">
+          <div>${i.emoji || ''} ${i.name}<small>${i.quantity} x ${brl(i.price)}</small></div>
+          <div>${brl(i.total)} <button data-remove="${i.productId}">X</button></div>
+        </div>`).join('')
+    : '<p>Carrinho vazio. Insira moedas! 🪙</p>';
+
+  const empty = cart.items.length === 0;
+  const discount = $('payment').value === 'dinheiro' ? Math.round(cart.subtotal * CASH_DISCOUNT * 100) / 100 : 0;
+  const shipping = empty ? 0 : (me?.isVip ? 0 : SHIPPING_FEE);
+  const total = Math.round((cart.subtotal - discount + shipping) * 100) / 100;
+
+  $('cartSum').innerHTML = `
+    <div><span>Subtotal</span><span>${brl(cart.subtotal)}</span></div>
+    <div><span>Desconto (dinheiro)</span><span>- ${brl(discount)}</span></div>
+    <div><span>Frete</span><span class="${me?.isVip && !empty ? 'free' : ''}">${me?.isVip && !empty ? 'GRÁTIS (Gold)' : brl(shipping)}</span></div>
+    <div class="total"><span>TOTAL</span><span>${brl(total)}</span></div>`;
+  $('btnCheckout').disabled = empty;
+}
+
+async function addToCart(id) {
+  try {
+    cart = await api('/cart/items', { method: 'POST', body: { productId: id, quantity: 1 } });
+    renderCart();
+    toast('ADICIONADO AO CARRINHO');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function removeFromCart(id) {
+  cart = await api('/cart/items/' + id, { method: 'DELETE' });
+  renderCart();
+}
+
+async function checkout() {
+  try {
+    const data = await api('/orders/checkout', { method: 'POST', body: { paymentMethod: $('payment').value } });
+    me = await api('/auth/me');
+    renderWho();
+    await Promise.all([loadProducts(), loadCart()]);
+    openCart(false);
+    toast(`COMPRA FINALIZADA! TOTAL ${brl(data.order.total)}`);
+    if (data.customer.becameVip) {
+      setTimeout(() => toast('🏆 LEVEL UP! VOCÊ VIROU PLAYER GOLD: FRETE GRÁTIS!', 'levelup'), 600);
+    }
+  } catch (e) { toast(e.message, 'error'); await loadProducts(); await loadCart(); }
+}
+
+// ---------- Pedidos ----------
+async function loadOrders() {
+  const orders = await api('/orders');
+  $('orders').innerHTML = orders.length
+    ? orders.map((o) => `
+        <div class="o">
+          <b>${new Date(o.createdAt).toLocaleString('pt-BR')}</b> · ${o.paymentMethod.toUpperCase()}<br>
+          ${o.items.map((i) => `${i.quantity}x ${i.product}`).join(', ')}<br>
+          Desconto ${brl(o.discount)} · Frete ${o.shipping ? brl(o.shipping) : 'grátis'} ·
+          <b>Total ${brl(o.total)}</b>
+        </div>`).join('')
+    : '<p>Nenhum pedido ainda.</p>';
+  show('viewOrders');
+}
+
+// ---------- Eventos ----------
+$('btnAuth').onclick = submitAuth;
+$('btnToggle').onclick = () => setMode(!registering);
+$('password').onkeydown = (e) => { if (e.key === 'Enter') submitAuth(); };
+document.querySelectorAll('[data-demo]').forEach((b) => b.onclick = () => {
+  setMode(false);
+  $('email').value = b.dataset.demo;
+  $('password').value = '123456';
+  submitAuth();
+});
+$('btnShop').onclick = () => show('viewShop');
+$('btnOrders').onclick = loadOrders;
+$('btnCart').onclick = () => openCart(true);
+$('btnClose').onclick = () => openCart(false);
+$('overlay').onclick = () => openCart(false);
+$('btnLogout').onclick = () => logout();
+$('btnCheckout').onclick = checkout;
+$('payment').onchange = renderCart;
+$('products').onclick = (e) => { const id = e.target.dataset.add; if (id) addToCart(id); };
+$('cartItems').onclick = (e) => { const id = e.target.dataset.remove; if (id) removeFromCart(id); };
+
+// ---------- Início ----------
+(async () => {
+  if (!token) return show('viewAuth');
+  try { me = await api('/auth/me'); await enterApp(); }
+  catch { logout(); }
+})();
+</script>
+</body>
+</html>
