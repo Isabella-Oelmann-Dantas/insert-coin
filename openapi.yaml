@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: Insert Coin API
+  description: |
+    API REST da loja de games retrô **Insert Coin**.
+
+    **Regras de negócio**
+    - Pagamento em **dinheiro** dá 10% de desconto sobre os produtos.
+    - Produtos só entram no carrinho se houver estoque.
+    - Apenas clientes VIP (Player Gold) têm frete grátis. O cliente vira VIP ao gastar R$ 300 ou mais.
+    - Frete fixo de R$ 19,90 para os demais clientes.
+
+    **Como autenticar:** faça login em `/api/auth/login`, copie o `token` e clique em **Authorize**.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: Auth
+  - name: Produtos
+  - name: Carrinho
+  - name: Pedidos
+
+paths:
+  /health:
+    get:
+      summary: Verifica se a API está no ar
+      responses:
+        '200':
+          description: API funcionando
+          content:
+            application/json:
+              example: { status: ok, game: INSERT COIN }
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Cadastra um novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, example: Davi Teste }
+                email: { type: string, example: davi@insertcoin.com }
+                password: { type: string, minLength: 6, example: '123456' }
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/Erro' }
+        '409': { $ref: '#/components/responses/Erro' }
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Faz login e devolve o token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: carla@insertcoin.com }
+                password: { type: string, example: '123456' }
+      responses:
+        '200':
+          description: Login realizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/Erro' }
+        '401': { $ref: '#/components/responses/Erro' }
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Dados do usuário logado
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Usuário logado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Erro' }
+
+  /api/products:
+    get:
+      tags: [Produtos]
+      summary: Lista os produtos
+      responses:
+        '200':
+          description: Lista de produtos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Product' }
+
+  /api/cart:
+    get:
+      tags: [Carrinho]
+      summary: Mostra o carrinho do usuário
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Carrinho atual
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+        '401': { $ref: '#/components/responses/Erro' }
+    delete:
+      tags: [Carrinho]
+      summary: Esvazia o carrinho
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Carrinho esvaziado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+
+  /api/cart/items:
+    post:
+      tags: [Carrinho]
+      summary: Adiciona um produto ao carrinho (somente com estoque)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId]
+              properties:
+                productId: { type: string, example: 6b058a64724bc3153c328168 }
+                quantity: { type: integer, minimum: 1, default: 1 }
+      responses:
+        '201':
+          description: Produto adicionado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+        '400': { $ref: '#/components/responses/Erro' }
+        '404': { $ref: '#/components/responses/Erro' }
+        '409':
+          description: Produto esgotado ou quantidade acima do estoque
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/cart/items/{productId}:
+    delete:
+      tags: [Carrinho]
+      summary: Remove um produto do carrinho
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Carrinho atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+
+  /api/orders/checkout:
+    post:
+      tags: [Pedidos]
+      summary: Finaliza a compra
+      description: |
+        - Em **dinheiro**: 10% de desconto sobre os produtos.
+        - Frete de R$ 19,90, **grátis para VIP**.
+        - Ao atingir R$ 300 em compras, o cliente vira VIP.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod]
+              properties:
+                paymentMethod:
+                  type: string
+                  enum: [dinheiro, cartao, pix]
+      responses:
+        '201':
+          description: Compra finalizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckoutResponse' }
+        '400': { $ref: '#/components/responses/Erro' }
+        '409': { $ref: '#/components/responses/Erro' }
+
+  /api/orders:
+    get:
+      tags: [Pedidos]
+      summary: Histórico de pedidos do usuário
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Erro:
+      description: Erro de validação, autenticação ou regra de negócio
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: Carrinho vazio }
+
+    User:
+      type: object
+      properties:
+        _id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        totalSpent: { type: number, example: 500 }
+        isVip: { type: boolean }
+
+    AuthResponse:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        token: { type: string }
+
+    Product:
+      type: object
+      properties:
+        _id: { type: string }
+        name: { type: string, example: Cartucho Aventura Pixelada }
+        emoji: { type: string, example: 👾 }
+        platform: { type: string, example: 16-bit }
+        description: { type: string }
+        price: { type: number, example: 149.9 }
+        stock: { type: integer, example: 5 }
+
+    CartItem:
+      type: object
+      properties:
+        productId: { type: string }
+        name: { type: string }
+        emoji: { type: string }
+        price: { type: number }
+        quantity: { type: integer }
+        stock: { type: integer }
+        total: { type: number }
+
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CartItem' }
+        subtotal: { type: number, example: 299.8 }
+
+    Order:
+      type: object
+      properties:
+        _id: { type: string }
+        paymentMethod: { type: string, enum: [dinheiro, cartao, pix] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product: { type: string }
+              price: { type: number }
+              quantity: { type: integer }
+        subtotal: { type: number, example: 149.9 }
+        discount: { type: number, example: 14.99 }
+        shipping: { type: number, example: 19.9 }
+        total: { type: number, example: 154.81 }
+        createdAt: { type: string, format: date-time }
+
+    CheckoutResponse:
+      type: object
+      properties:
+        order: { $ref: '#/components/schemas/Order' }
+        customer:
+          type: object
+          properties:
+            totalSpent: { type: number, example: 449.8 }
+            isVip: { type: boolean }
+            becameVip: { type: boolean }

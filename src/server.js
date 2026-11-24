@@ -4,6 +4,10 @@ const path = require('path');
 const { connect } = require('./database');
 const seed = require('./seed');
 const authRoutes = require('./routes/auth');
+const productRoutes = require('./routes/products');
+const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/orders');
+const docsRoutes = require('./routes/docs');
 
 const app = express();
 app.use(cors());
@@ -13,6 +17,10 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_, res) => res.json({ status: 'ok', game: 'INSERT COIN' }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use(docsRoutes);
 
 const PORT = process.env.PORT || 3000;
 
